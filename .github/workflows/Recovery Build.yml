@@ -106,20 +106,16 @@ jobs:
         repo sync -j$(nproc --all) --force-sync
       working-directory: workspace
 
+    - name: Fix libfscrypttwrp missing dependency
+      run: |
+        cd workspace
+        sed -i 's/"libfscrypttwrp"/"libfscrypt"/g' system/core/fs_mgr/Android.bp
+
     - name: Clone device tree
       run: |
         git clone ${{ inputs.DEVICE_TREE_URL }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
       working-directory: workspace
-    - name: Fix fs_mgr missing libfscrypttwrp
-      run: |
-        FILE=system/core/fs_mgr/Android.bp
-        if grep -q "libfscrypttwrp" "$FILE"; then
-          echo "Patching $FILE: libfscrypttwrp -> libfscrypt"
-          sed -i 's/libfscrypttwrp/libfscrypt/g' "$FILE"
-        else
-          echo "No libfscrypttwrp references found in $FILE, skipping patch."
-        fi
-
+    
     - name: Sync Device Dependencies
       run: |
         bash ${GITHUB_WORKSPACE}/scripts/convert.sh ${{ inputs.DEVICE_PATH }}/${{ steps.vendorname.outputs.prefix }}.dependencies
