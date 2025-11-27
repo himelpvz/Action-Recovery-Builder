@@ -267,7 +267,6 @@ jobs:
           workspace/out/target/product/${{ inputs.DEVICE_NAME }}/*installer*zip
           workspace/out/target/product/${{ inputs.DEVICE_NAME }}/obj/PACKAGING/vendor_boot_intermediates/vendor_ramdisk.*
           workspace/out/target/product/${{ inputs.DEVICE_NAME }}/ramdisk-recovery.*
-          workspace/out/target/product/${{ inputs.DEVICE_NAME }}/ramdisk-new.*
           workspace/out/target/product/${{ inputs.DEVICE_NAME }}/vendor_ramdisk.*
         name: ${{ inputs.MANIFEST_BRANCH }}_${{ inputs.DEVICE_NAME }} (TWRP)
         tag_name: ${{ github.run_id }}
