@@ -132,7 +132,7 @@ jobs:
         mka pbrp
       working-directory: workspace
 
-      - name: ls pwd and directory 
+    - name: ls pwd and directory 
       run: |
         ls -lR workspace/out/target/product/${{ inputs.DEVICE_NAME }}/
 
@@ -145,10 +145,11 @@ jobs:
           workspace/out/target/product/${{ steps.devicename.outputs.device }}/obj/PACKAGING/vendor_ramdisk_fragments_intermediates/recovery.*
           workspace/out/target/product/${{ steps.devicename.outputs.device }}/ramdisk-recovery.*
           workspace/out/target/product/${{ inputs.DEVICE_NAME }}/vendor_ramdisk.*
-        name: ${{ steps.devicename.outputs.device}} (PBRP)
+        name: ${{ inputs.MANIFEST_BRANCH }}_${{ inputs.devicename.outputs.device }} (TWRP)
         tag_name: ${{ github.run_id }}
         body: |
           Manifest: ${{ inputs.MANIFEST_BRANCH }}
           Target: ${{ inputs.BUILD_TARGET }}.img
+          Version: ${{ inputs.MANIFEST_BRANCH }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
