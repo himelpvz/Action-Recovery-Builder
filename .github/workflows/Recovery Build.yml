@@ -36,7 +36,7 @@ on:
 jobs:
   build:
     if: github.event.repository.owner.id == github.event.sender.id
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     # You can use either of the ubuntu-20.04 or ubuntu-22.04 runner
     steps:
     - name: Display Run Parameters
@@ -137,6 +137,7 @@ jobs:
           workspace/out/target/product/${{ steps.devicename.outputs.device }}/*${{ steps.devicename.outputs.device }}*
           workspace/out/target/product/${{ steps.devicename.outputs.device }}/obj/PACKAGING/vendor_ramdisk_fragments_intermediates/recovery.*
           workspace/out/target/product/${{ steps.devicename.outputs.device }}/ramdisk-recovery.*
+          workspace/out/target/product/${{ inputs.DEVICE_NAME }}/vendor_ramdisk.*
         name: ${{ steps.devicename.outputs.device}} (PBRP)
         tag_name: ${{ github.run_id }}
         body: |
