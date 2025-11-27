@@ -153,10 +153,11 @@ jobs:
           workspace/out/target/product/${{ steps.devicename.outputs.device }}/obj/PACKAGING/vendor_ramdisk_fragments_intermediates/recovery.*
           workspace/out/target/product/${{ steps.devicename.outputs.device }}/ramdisk-recovery.*
           workspace/out/target/product/${{ inputs.DEVICE_NAME }}/vendor_ramdisk.*
-        name: ${{ steps.devicename.outputs.device}} (SHRP)
+        name: ${{ inputs.MANIFEST_BRANCH }}_${{ inputs.DEVICE_NAME }} (SHRP)
         tag_name: ${{ github.run_id }}
         body: |
           Manifest: ${{ inputs.MANIFEST_BRANCH }}
           Target: ${{ inputs.BUILD_TARGET }}.img
+          Version: ${{ inputs.MANIFEST_BRANCH }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
