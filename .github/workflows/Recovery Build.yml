@@ -3,6 +3,9 @@ name: Recovery Build
 on:
   workflow_dispatch:
     inputs:
+      VERSION_TAGS:
+        description: Write version name or any custom text.
+        required: false
       MANIFEST_BRANCH:
         type: choice
         description: Manifest Branch
