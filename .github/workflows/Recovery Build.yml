@@ -269,11 +269,11 @@ jobs:
           workspace/out/target/product/${{ inputs.DEVICE_NAME }}/ramdisk-recovery.*
           workspace/out/target/product/${{ inputs.DEVICE_NAME }}/ramdisk-new.*
           workspace/out/target/product/${{ inputs.DEVICE_NAME }}/vendor_ramdisk.*
-        name: ${{ inputs.DEVICE_NAME }} (TWRP)
+        name: ${{ inputs.MANIFEST_BRANCH }}_${{ inputs.DEVICE_NAME }} (TWRP)
         tag_name: ${{ github.run_id }}
         body: |
           Manifest: ${{ inputs.MANIFEST_BRANCH }}
           Target: ${{ inputs.BUILD_TARGET }}.img
-          Version:
+          Version: ${{ inputs.MANIFEST_BRANCH }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
