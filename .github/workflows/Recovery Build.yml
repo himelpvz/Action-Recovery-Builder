@@ -140,11 +140,11 @@ jobs:
           fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/*${{ inputs.DEVICE_NAME }}*
           fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/obj/PACKAGING/vendor_ramdisk_fragments_intermediates/recovery.*
           fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/ramdisk-recovery.*
-        name: |
-          ${{ inputs.DEVICE_NAME }} (OrangeFox)
+        name: ${{ inputs.MANIFEST_BRANCH }}_${{ inputs.DEVICE_NAME }} (OrangeFox)
         tag_name: ${{ github.run_id }}
         body: |
           Manifest: ${{ inputs.MANIFEST_BRANCH }}
-          Target: ${{ inputs.BUILD_TARGET }}
+          Target: ${{ inputs.BUILD_TARGET }}.img
+          Version: ${{ inputs.MANIFEST_BRANCH }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
