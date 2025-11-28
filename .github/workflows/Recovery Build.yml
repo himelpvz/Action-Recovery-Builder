@@ -155,7 +155,7 @@ jobs:
           workspace/out/target/product/${{ inputs.DEVICE_NAME }}/vendor_ramdisk.*
         name: ${{ steps.devicename.outputs.device}} (SHRP)
         tag_name: ${{ github.run_id }}
-        body: |
+         body: |
           Manifest: ${{ inputs.MANIFEST_BRANCH }}
           Target: ${{ inputs.BUILD_TARGET }}.img
       env:
