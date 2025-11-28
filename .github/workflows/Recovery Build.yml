@@ -158,6 +158,6 @@ jobs:
          body: |
           Manifest: ${{ inputs.MANIFEST_BRANCH }}
           Target: ${{ inputs.BUILD_TARGET }}.img
-          Version: ${{ inputs.MANIFEST_BRANCH }}
+          Version: ${{ inputs.VERSION_TAG }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
