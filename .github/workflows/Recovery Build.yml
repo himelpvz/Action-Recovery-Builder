@@ -150,12 +150,12 @@ jobs:
         files: |
           workspace/out/target/product/${{ steps.devicename.outputs.device }}/${{ inputs.BUILD_TARGET }}.img
           workspace/out/target/product/${{ steps.devicename.outputs.device }}/*${{ steps.devicename.outputs.device }}*
-          workspace/out/target/product/${{ steps.devicename.outputs.device }}/obj/PACKAGING/vendor_ramdisk_fragments_intermediates/recovery.*
+          workspace/out/target/product/${{ steps.devicename.outputs.device }}/obj/PACKAGING/vendor_ramdisk_fragments_intermediates/vendor_ramdisk.*
           workspace/out/target/product/${{ steps.devicename.outputs.device }}/ramdisk-recovery.*
-          workspace/out/target/product/${{ inputs.DEVICE_NAME }}/vendor_ramdisk.*
+          workspace/out/target/product/${{ steps.devicename.outputs.device }}/vendor_ramdisk.*
         name: ${{ steps.devicename.outputs.device}} (SHRP)
         tag_name: ${{ github.run_id }}
-         body: |
+        body: |
           Manifest: ${{ inputs.MANIFEST_BRANCH }}
           Target: ${{ inputs.BUILD_TARGET }}.img
       env:
