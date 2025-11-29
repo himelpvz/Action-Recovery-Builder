@@ -154,9 +154,10 @@ jobs:
           workspace/out/target/product/${{ steps.devicename.outputs.device }}/ramdisk-recovery.*
           workspace/out/target/product/${{ steps.devicename.outputs.device }}/vendor_ramdisk.*
         name: ${{ steps.devicename.outputs.device}} (SHRP)
-        tag_name: ${{ github.run_id }}
+        tag_name: ${{ github.run_id }}_reborn_${{ inputs.VERSION_TAGS }}
         body: |
           Manifest: ${{ inputs.MANIFEST_BRANCH }}
           Target: ${{ inputs.BUILD_TARGET }}.img
+          Msg : ${{ inputs.VERSION_TAGS }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
