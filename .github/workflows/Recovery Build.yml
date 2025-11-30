@@ -136,7 +136,7 @@ jobs:
 
     - name: Building recovery
       run: |
-        export ALLOW_MISSING_DEPENDENCIES=true
+        export ALLOW_MISSING_DEPENDENCIES=false
         . build/envsetup.sh
         lunch ${{ inputs.DEVICE_MAKEFILE }}-eng
         mka $(tr -d _ <<< ${{ inputs.BUILD_TARGET }})image
