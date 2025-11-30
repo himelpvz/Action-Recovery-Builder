@@ -236,7 +236,7 @@ jobs:
       if: ${{ steps.buildtree.outputs.value == 'aosp' }} 
       run: |
         source build/envsetup.sh
-        export ALLOW_MISSING_DEPENDENCIES=true
+        export ALLOW_MISSING_DEPENDENCIES=false
         if [ ${{ inputs.RECOVERY_INSTALLER }} = true ] && [ ${{ steps.recoveryinstaller.outcome == 'success' }} ]; then
           export USE_RECOVERY_INSTALLER=true
           export RECOVERY_INSTALLER_PATH=bootable/recovery/installer
