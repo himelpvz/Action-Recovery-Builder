@@ -1,5 +1,5 @@
 
-name: Recovery Build Fix
+name: Recovery Build
 
 on:
   workflow_dispatch:
