@@ -21,7 +21,7 @@ on:
       DEVICE_TREE_URL:
         description: Device Tree URL
         required: true
-        default: https://github.com/chickendrop89/device_xiaomi_sm6225ad-recovery.git
+        default: https://github.com/chickendrop89/device_xiaomi_sm6225ad-recovery
       DEVICE_TREE_BRANCH:
         description: Device Tree Branch
         required: true
