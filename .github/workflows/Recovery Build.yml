@@ -1,4 +1,5 @@
-name: Recovery Build
+
+name: Recovery Build Fix
 
 on:
   workflow_dispatch:
@@ -21,7 +22,7 @@ on:
       DEVICE_TREE_URL:
         description: Device Tree URL
         required: true
-        default: https://github.com/chickendrop89/device_xiaomi_sm6225ad-recovery.git
+        default: https://github.com/chickendrop89/device_xiaomi_sm6225ad-recovery
       DEVICE_TREE_BRANCH:
         description: Device Tree Branch
         required: true
@@ -46,7 +47,7 @@ on:
         - recovery
         - vendor_boot
         required: true
-        default: boot
+        default: recovery
       RECOVERY_INSTALLER:
         description: Include recovery installer zip
         type: boolean
@@ -123,7 +124,7 @@ jobs:
         cd workspace
         git config --global user.name "${GITHUB_ACTOR}"
         git config --global user.email "${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
-        repo init --depth=1 -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_${{ steps.buildtree.outputs.value }}.git -b twrp-${{ inputs.MANIFEST_BRANCH }}
+        repo init --depth=1 -u https://github.com/gawasvedraj/platform_manifest_twrp_aosp.git -b twrp-${{ inputs.MANIFEST_BRANCH }}
           
     - name: Repo Sync
       run: |
