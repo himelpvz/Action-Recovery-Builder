@@ -38,10 +38,11 @@ on:
         - recovery
         - vendor_boot
         required: true
-        default: recovery
+        default: boot
       OPTIONAL_FLAGS:
         description: (Optional) Additional "FOX_" flags for build can be added here
         required: false
+        default: export FOX_VIRTUAL_AB_DEVICE=1
 
 jobs:
   build:
