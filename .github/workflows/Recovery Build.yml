@@ -17,7 +17,7 @@ on:
       DEVICE_TREE_URL:
         description: Device Tree URL
         required: true
-        default: https://github.com/Jashkirat/device_xiaomi_spes-Orangefox.git
+        default: https://gitlab.com/OrangeFox/device/spes
       DEVICE_TREE_BRANCH:
         description: Device Tree Branch
         required: true
