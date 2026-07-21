@@ -39,6 +39,7 @@ on:
         description: (Optional) Gerrit commit numbers separated by a space to be included in the build (leave blank if not using)
         type: string
         required: false
+        default: export FOX_VIRTUAL_AB_DEVICE=1
       BUILD_TARGET:
         type: choice
         description: Partition containing recovery ramdisk
