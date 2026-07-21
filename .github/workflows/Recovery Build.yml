@@ -17,19 +17,19 @@ on:
       DEVICE_TREE_URL:
         description: Device Tree URL
         required: true
-        default: https://gitlab.com/OrangeFox/device/lavender
+        default: https://gitlab.com/OrangeFox/device/spes
       DEVICE_TREE_BRANCH:
         description: Device Tree Branch
         required: true
-        default: fox_12.1
+        default: fox-12.1
       DEVICE_PATH:
         description: Path the device tree should be synced to, relative to source root
         required: true
-        default: device/xiaomi/lavender
+        default: device/xiaomi/spes
       DEVICE_NAME:
         description: Device Name from tree (should match name on twrp_<DEVICE_NAME>.mk)
         required: true
-        default: lavender
+        default: spes
       BUILD_TARGET:
         type: choice
         description: Partition containing recovery ramdisk
@@ -38,10 +38,11 @@ on:
         - recovery
         - vendor_boot
         required: true
-        default: recovery
+        default: boot
       OPTIONAL_FLAGS:
         description: (Optional) Additional "FOX_" flags for build can be added here
         required: false
+        default: export FOX_VIRTUAL_AB_DEVICE=1
 
 jobs:
   build:
@@ -104,14 +105,6 @@ jobs:
         sed -i "s%{DEVICE_REMOTE_NAME}%${REMOTE_NAME}%g" .repo/local_manifests/roomservice.xml
         sed -i "s%{DEVICE_TREE_BRANCH}\"/-->%${{ inputs.DEVICE_TREE_BRANCH }}\"/>%g" .repo/local_manifests/roomservice.xml
         repo sync ${{ inputs.DEVICE_PATH }} -j$(nproc --all)
-        DT_NAME=$(awk -F/ '{print $NF}' <<< ${{ inputs.DEVICE_TREE_URL }})
-        if [ "$DT_NAME" != ${{ inputs.DEVICE_NAME }} ]; then
-          if [ -z "$(ls ${{ inputs.DEVICE_PATH }}/${{ inputs.DEVICE_NAME }}/BoardConfig.mk 2>/dev/null)" ]; then
-            mkdir ${{ inputs.DEVICE_PATH }}/${{ inputs.DEVICE_NAME }}
-            DT_BoardConfig=$(ls ${{ inputs.DEVICE_PATH }}/BoardConfig* | head -1)
-            echo -e "-include ${DT_BoardConfig}">${{ inputs.DEVICE_PATH }}/${{ inputs.DEVICE_NAME }}/BoardConfig.mk
-          fi
-        fi
       working-directory: fox_${{ inputs.MANIFEST_BRANCH }}
 
     - name: Build it
@@ -130,16 +123,19 @@ jobs:
         fi
         lunch twrp_${{ inputs.DEVICE_NAME }}-eng && mka $(tr -d _ <<< ${{ inputs.BUILD_TARGET }})image
       working-directory: fox_${{ inputs.MANIFEST_BRANCH }}
-    - name: ls pwd and directory 
+    - name: ls pwd and directory
       run: |
-        ls -lR workspace/out/target/product/${{ inputs.DEVICE_NAME }}/
+        ls -lR fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/
+      continue-on-error: true
+
     - name: Upload to Release
-      uses: softprops/action-gh-release@4634c16e79c963813287e889244c50009e7f0981
+      uses: softprops/action-gh-release@v2
       with:
         files: |
           fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/*${{ inputs.DEVICE_NAME }}*
           fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/obj/PACKAGING/vendor_ramdisk_fragments_intermediates/recovery.*
           fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/ramdisk-recovery.*
+          fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/boot.img
         name: ${{ inputs.MANIFEST_BRANCH }}_${{ inputs.DEVICE_NAME }} (OrangeFox)
         tag_name: ${{ github.run_id }}
         body: |
