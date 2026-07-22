@@ -19,7 +19,7 @@ on:
       DEVICE_TREE_URL:
         description: Device Tree URL
         required: true
-        default: https://github.com/rafialmosaddek/device_xiaomi_sm6225ad-recovery.git
+        default: https://github.com/chickendrop89/device_xiaomi_sm6225ad-recovery.git
       DEVICE_TREE_BRANCH:
         description: Device Tree Branch
         required: true
@@ -235,6 +235,7 @@ jobs:
       run: |
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=false
+        export USE_CCACHE=0
         if [ "${{ inputs.RECOVERY_INSTALLER }}" = "true" ] && [ "${{ steps.recoveryinstaller.outcome }}" = "success" ]; then
           export USE_RECOVERY_INSTALLER=true
           export RECOVERY_INSTALLER_PATH=bootable/recovery/installer
@@ -247,6 +248,7 @@ jobs:
       run: |
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
+        export USE_CCACHE=0
         if [ "${{ inputs.RECOVERY_INSTALLER }}" = "true" ] && [ "${{ steps.recoveryinstaller.outcome }}" = "success" ]; then
           export USE_RECOVERY_INSTALLER=true
           export RECOVERY_INSTALLER_PATH=bootable/recovery/installer
