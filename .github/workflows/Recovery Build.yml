@@ -7,25 +7,35 @@ on:
         description: Write version name or any custom text.
         required: false
       MANIFEST_BRANCH:
+        type: choice
         description: Manifest Branch
+        options:
+        - 12.1
+        - 11
+        - 10.0
+        - 9.0
         required: true
-        default: v3_9.0
+        default: 12.1
       DEVICE_TREE_URL:
         description: Device Tree URL
         required: true
-        default: https://github.com/SHRP-Devices/device_samsung_d2x
+        default: https://github.com/chickendrop89/device_xiaomi_sm6225ad-recovery.git
       DEVICE_TREE_BRANCH:
         description: Device Tree Branch
         required: true
-        default: android-9.0
+        default: twrp-12.1
       DEVICE_PATH:
         description: Path the device tree should be synced to, relative to source root
         required: true
-        default: device/samsung/d2x
-      DEVICE_MAKEFILE:
-        description: 'Name of device-specific makefile from tree (format: <PREFIX>_<DEVICE_NAME>)'
+        default: device/xiaomi/tapas
+      DEVICE_NAME:
+        description: Device Name from tree (should match name on twrp_<DEVICE_NAME>.mk)
         required: true
-        default: omni_d2x
+        default: tapas
+      REPOPICK_PATCHES:
+        description: (Optional) Gerrit commit numbers separated by a space to be included in the build (leave blank if not using)
+        type: string
+        required: false
       BUILD_TARGET:
         type: choice
         description: Partition containing recovery ramdisk
@@ -35,40 +45,36 @@ on:
         - vendor_boot
         required: true
         default: recovery
+      RECOVERY_INSTALLER:
+        description: Include recovery installer zip
+        type: boolean
+        required: true
+        default: true
 
 jobs:
   build:
+    name: ${{ github.event.inputs.VERSION_TAGS }}
     if: github.event.repository.owner.id == github.event.sender.id
     runs-on: ubuntu-22.04
-    # You can use either of the ubuntu-20.04 or ubuntu-22.04 runner
     steps:
     - name: Display Run Parameters
       run: |
+        echo "Version Tag: ${{ inputs.VERSION_TAGS }}"
         echo "::group::User Environment Variables"
         echo "Manifest Branch: ${{ inputs.MANIFEST_BRANCH }}"
         echo "Device Tree URL: ${{ inputs.DEVICE_TREE_URL }}"
         echo "Device Tree Branch: ${{ inputs.DEVICE_TREE_BRANCH }}"
         echo "Device Path: ${{ inputs.DEVICE_PATH }}"
-        echo "Device Makefile: ${{ inputs.DEVICE_MAKEFILE }}.mk"
+        echo "Device Name: ${{ inputs.DEVICE_NAME }}"
         echo "Build Target: ${{ inputs.BUILD_TARGET }}.img"
+        echo "Include Recovery Installer: ${{ inputs.RECOVERY_INSTALLER }}"
         echo "::endgroup::"
 
-    - name: Identify Vendor
-      run: echo -e "prefix=$(awk -F_ '{print $1}' <<< ${{ inputs.DEVICE_MAKEFILE }})" >> ${GITHUB_OUTPUT}
-      id: vendorname
-
-    - name: Identify Device
-      run: echo -e "device=$(grep -oP '(?<=_).*' <<< ${{ inputs.DEVICE_MAKEFILE }})" >> ${GITHUB_OUTPUT}
-      id: devicename
-
-    # You might want to Checkout your repo first, but not mandatory
     - name: Check Out
       uses: actions/checkout@v4
-            
-    # Cleanup The Actions Workspace Using Custom Composite Run Actions
+
     - name: Cleanup
       uses: rokibhasansagar/slimhub_actions@main
-      # That's it! Now use your normal steps
 
     - name: Set Swap Space
       uses: pierotofy/set-swap-space@master
@@ -77,13 +83,32 @@ jobs:
 
     - name: Prepare the environment
       run: |
+        sudo add-apt-repository universe
         sudo apt update
         sudo apt -y upgrade
-        sudo apt -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib libc6-dev lib32ncurses5-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.0-gtk3-dev libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev libtinfo5
-        sudo add-apt-repository universe
-        sudo apt -y install libncurses5
+        sudo apt -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib libc6-dev lib32ncurses5-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.0-gtk3-dev libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev libtinfo5 libncurses5
+
+    - name: Check Build Tree
+      uses: haya14busa/action-cond@v1.2.1
+      id: buildtree
+      with:
+        cond: ${{ inputs.MANIFEST_BRANCH == '11' || inputs.MANIFEST_BRANCH == '12.1' }}
+        if_true: aosp
+        if_false: omni
+
+    - name: Determine SHRP manifest branch
+      id: shrpbranch
+      run: |
+        case "${{ inputs.MANIFEST_BRANCH }}" in
+          12.1) echo "branch=shrp-12.1" >> "$GITHUB_OUTPUT" ;;
+          11)   echo "branch=v3_11.0"   >> "$GITHUB_OUTPUT" ;;
+          10.0) echo "branch=v3_10.0"   >> "$GITHUB_OUTPUT" ;;
+          9.0)  echo "branch=v3_9.0"    >> "$GITHUB_OUTPUT" ;;
+          *)    echo "SHRP has no known manifest branch for ${{ inputs.MANIFEST_BRANCH }}" && exit 1 ;;
+        esac
 
     - name: Install OpenJDK
+      if: steps.buildtree.outputs.value == 'omni'
       uses: actions/setup-java@v4
       with:
         distribution: zulu
@@ -95,65 +120,149 @@ jobs:
         curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
         chmod a+x ~/bin/repo
         sudo ln -sf ~/bin/repo /usr/bin/repo
-      
+
     - name: Initialize repo
       run: |
         mkdir workspace
         cd workspace
         git config --global user.name "${GITHUB_ACTOR}"
         git config --global user.email "${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
-        repo init --depth=1 -u https://github.com/SHRP/manifest.git -b ${{ inputs.MANIFEST_BRANCH }}
-          
+        repo init --depth=1 -u https://github.com/SHRP/manifest.git -b ${{ steps.shrpbranch.outputs.branch }}
+
     - name: Repo Sync
       run: |
         repo sync -j$(nproc --all) --force-sync
       working-directory: workspace
 
-    - name: Fix libfscrypttwrp missing dependency
+    - name: Create roomservice.xml
       run: |
-        cd workspace
-        sed -i 's/"libfscrypttwrp"/"libfscrypt"/g' system/core/fs_mgr/Android.bp
+        mkdir -p .repo/local_manifests
+        cp -f ${GITHUB_WORKSPACE}/templates/*.xml .repo/local_manifests/
+      working-directory: workspace
 
-    - name: Clone device tree
+    - name: Clone device tree (TeamWin)
+      if: |
+        contains( inputs.DEVICE_TREE_URL,'/TeamWin/' )
+        && steps.buildtree.outputs.value == 'aosp'
+      run: |
+        sed -i "s%\!--project name=\"{DEVICE_TREE_URL_REPO}%project name=\"$(grep -oP '(?<=TeamWin/).*' <<< ${{ inputs.DEVICE_TREE_URL }})%g" .repo/local_manifests/roomservice.xml
+        sed -i "s%{DEVICE_PATH}%${{ inputs.DEVICE_PATH }}%g" .repo/local_manifests/roomservice.xml
+        sed -i "s%{DEVICE_REMOTE_NAME}%TeamWin%g" .repo/local_manifests/roomservice.xml
+        sed -i "s%{DEVICE_TREE_BRANCH}\"/-->%${{ inputs.DEVICE_TREE_BRANCH }}\"/>%g" .repo/local_manifests/roomservice.xml
+        repo sync -j$(nproc --all)
+      working-directory: workspace
+
+    - name: Clone device tree (Github/Other)
+      if: |
+        !contains( inputs.DEVICE_TREE_URL,'/TeamWin/' )
+        && steps.buildtree.outputs.value == 'aosp'
+      run: |
+        REMOTE_NAME=$(grep -oP '(?<=://).*(?=\.)' <<< ${{ inputs.DEVICE_TREE_URL }})
+        REMOTE_FETCH=$(grep -oP '(?<=://).*?(?=\/)' <<< ${{ inputs.DEVICE_TREE_URL }})
+        if [ "${REMOTE_NAME}" != "github" ]; then
+          sed -i "s%\!--remote name=\"{REMOTE_NAME}%remote name=\"${REMOTE_NAME}%g" .repo/local_manifests/roomservice.xml
+          sed -i "s%{REMOTE_FETCH}\"/-->%${REMOTE_FETCH}\"/>%g" .repo/local_manifests/roomservice.xml
+        fi
+        sed -i "s%\!--project name=\"{DEVICE_TREE_URL_REPO}%project name=\"$(grep -oP "(?<=${REMOTE_FETCH}/).*" <<< ${{ inputs.DEVICE_TREE_URL }})%g" .repo/local_manifests/roomservice.xml
+        sed -i "s%{DEVICE_PATH}%${{ inputs.DEVICE_PATH }}%g" .repo/local_manifests/roomservice.xml
+        sed -i "s%{DEVICE_REMOTE_NAME}%${REMOTE_NAME}%g" .repo/local_manifests/roomservice.xml
+        sed -i "s%{DEVICE_TREE_BRANCH}\"/-->%${{ inputs.DEVICE_TREE_BRANCH }}\"/>%g" .repo/local_manifests/roomservice.xml
+        repo sync -j$(nproc --all)
+      working-directory: workspace
+
+    - name: Clone device tree (Omni)
+      if: ${{ steps.buildtree.outputs.value == 'omni' }}
       run: |
         git clone ${{ inputs.DEVICE_TREE_URL }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
       working-directory: workspace
-    
-    - name: Sync Device Dependencies
+
+    - name: Sync Device Dependencies (AOSP)
+      if: ${{ steps.buildtree.outputs.value == 'aosp' }}
       run: |
-        bash ${GITHUB_WORKSPACE}/scripts/convert.sh ${{ inputs.DEVICE_PATH }}/${{ steps.vendorname.outputs.prefix }}.dependencies
+        source build/envsetup.sh
+        lunch twrp_${{ inputs.DEVICE_NAME }}-eng
+      working-directory: workspace
+      id: syncdevicedeps
+      continue-on-error: true
+
+    - name: Sync Device Dependencies (Omni/subdevices)
+      if: |
+        steps.buildtree.outputs.value == 'omni'
+        || steps.syncdevicedeps.outcome == 'failure'
+      run: |
+        bash ${GITHUB_WORKSPACE}/scripts/convert.sh ${{ inputs.DEVICE_PATH }}/${{ steps.buildtree.outputs.value }}.dependencies
         repo sync -j$(nproc --all)
       working-directory: workspace
       continue-on-error: true
 
+    - name: Repopick Gerrit patches
+      if: inputs.REPOPICK_PATCHES != ''
+      run: |
+        source build/envsetup.sh
+        repopick -g https://gerrit.twrp.me ${{ inputs.REPOPICK_PATCHES }}
+      working-directory: workspace
+      continue-on-error: true
+
+    - name: Check Recovery Installer availability
+      if: inputs.RECOVERY_INSTALLER == true && inputs.BUILD_TARGET != 'vendor_boot'
+      id: recoveryinstaller
+      run: |
+        if [ -d "bootable/recovery/installer" ]; then
+          echo "Recovery installer directory found"
+          echo "available=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "bootable/recovery/installer not found in this tree — skipping installer build"
+          echo "available=false" >> "$GITHUB_OUTPUT"
+        fi
+      working-directory: workspace
+
     - name: Install Python 2
+      if: ${{ steps.buildtree.outputs.value == 'omni' }}
       run: |
         sudo apt -y install python2
-        if [ "${{ steps.vendorname.outputs.prefix }}" != "twrp" ]; then
-          cd /usr/bin
-          sudo ln -sf python2 python
-        fi
+        cd /usr/bin
+        sudo ln -sf python2 python
 
-    - name: Building recovery
+    - name: Building recovery (AOSP)
+      if: ${{ steps.buildtree.outputs.value == 'aosp' }}
       run: |
-        export ALLOW_MISSING_DEPENDENCIES=true
-        . build/envsetup.sh
-        lunch ${{ inputs.DEVICE_MAKEFILE }}-eng
-        mka $(tr -d _ <<< ${{ inputs.BUILD_TARGET }})image
+        source build/envsetup.sh
+        export ALLOW_MISSING_DEPENDENCIES=false
+        lunch twrp_${{ inputs.DEVICE_NAME }}-eng || true
+        mkdir -p "${GITHUB_WORKSPACE}/.ccache"
+        export CCACHE_DIR="${GITHUB_WORKSPACE}/.ccache"
+        if [ "${{ inputs.RECOVERY_INSTALLER }}" = "true" ] && [ "${{ steps.recoveryinstaller.outputs.available }}" = "true" ]; then
+          export USE_RECOVERY_INSTALLER=true
+          export RECOVERY_INSTALLER_PATH=bootable/recovery/installer
+        fi
+        make $(tr -d _ <<< ${{ inputs.BUILD_TARGET }})image -j$(nproc --all)
       working-directory: workspace
-    - name: ls pwd and directory 
+
+    - name: Building recovery (Omni)
+      if: ${{ steps.buildtree.outputs.value == 'omni' }}
       run: |
-        ls -lR workspace/out/target/product/${{ inputs.DEVICE_NAME }}/
+        source build/envsetup.sh
+        export ALLOW_MISSING_DEPENDENCIES=true
+        lunch omni_${{ inputs.DEVICE_NAME }}-eng || true
+        mkdir -p "${GITHUB_WORKSPACE}/.ccache"
+        export CCACHE_DIR="${GITHUB_WORKSPACE}/.ccache"
+        if [ "${{ inputs.RECOVERY_INSTALLER }}" = "true" ] && [ "${{ steps.recoveryinstaller.outputs.available }}" = "true" ]; then
+          export USE_RECOVERY_INSTALLER=true
+          export RECOVERY_INSTALLER_PATH=bootable/recovery/installer
+        fi
+        make ${{ inputs.BUILD_TARGET }}image -j$(nproc --all)
+      working-directory: workspace
+
     - name: Upload to Release
-      uses: softprops/action-gh-release@4634c16e79c963813287e889244c50009e7f0981
+      uses: softprops/action-gh-release@v2
       with:
         files: |
-          workspace/out/target/product/${{ steps.devicename.outputs.device }}/${{ inputs.BUILD_TARGET }}.img
-          workspace/out/target/product/${{ steps.devicename.outputs.device }}/*${{ steps.devicename.outputs.device }}*
-          workspace/out/target/product/${{ steps.devicename.outputs.device }}/obj/PACKAGING/vendor_ramdisk_intermediates/recovery.*
-          workspace/out/target/product/${{ steps.devicename.outputs.device }}/ramdisk-recovery.*
-          workspace/out/target/product/${{ steps.devicename.outputs.device }}/vendor_ramdisk.*
-        name: ${{ inputs.MANIFEST_BRANCH }}_${{ steps.devicename.outputs.device }} (SHRP)
+          workspace/out/target/product/${{ inputs.DEVICE_NAME }}/${{ inputs.BUILD_TARGET }}.img
+          workspace/out/target/product/${{ inputs.DEVICE_NAME }}/*${{ inputs.DEVICE_NAME }}*
+          workspace/out/target/product/${{ inputs.DEVICE_NAME }}/obj/PACKAGING/vendor_ramdisk_intermediates/recovery.*
+          workspace/out/target/product/${{ inputs.DEVICE_NAME }}/ramdisk-recovery.*
+          workspace/out/target/product/${{ inputs.DEVICE_NAME }}/vendor_ramdisk.*
+        name: ${{ inputs.MANIFEST_BRANCH }}_${{ inputs.DEVICE_NAME }} (SHRP)
         tag_name: ${{ github.run_id }}
         body: |
           Manifest: ${{ inputs.MANIFEST_BRANCH }}
