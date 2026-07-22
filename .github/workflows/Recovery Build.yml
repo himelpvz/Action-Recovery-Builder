@@ -12,16 +12,14 @@ on:
         options:
         - 12.1
         - 11
+        - 10.0
         - 9.0
-        - 8.1
-        - 7.1
-        - 6.0
         required: true
         default: 12.1
       DEVICE_TREE_URL:
         description: Device Tree URL
         required: true
-        default: https://github.com/rafialmosaddek/device_xiaomi_sm6225ad-recovery.git
+        default: https://github.com/chickendrop89/device_xiaomi_sm6225ad-recovery.git
       DEVICE_TREE_BRANCH:
         description: Device Tree Branch
         required: true
@@ -29,7 +27,7 @@ on:
       DEVICE_PATH:
         description: Path the device tree should be synced to, relative to source root
         required: true
-        default: device/xiaomi/tapas
+        default: device/xiaomi/sm6225ad-recovery
       DEVICE_NAME:
         description: Device Name from tree (should match name on twrp_<DEVICE_NAME>.mk)
         required: true
@@ -46,7 +44,7 @@ on:
         - recovery
         - vendor_boot
         required: true
-        default: boot
+        default: recovery
       RECOVERY_INSTALLER:
         description: Include recovery installer zip
         type: boolean
@@ -98,6 +96,17 @@ jobs:
         if_true: aosp
         if_false: omni
 
+    - name: Determine SHRP manifest branch
+      id: shrpbranch
+      run: |
+        case "${{ inputs.MANIFEST_BRANCH }}" in
+          12.1) echo "branch=shrp-12.1" >> "$GITHUB_OUTPUT" ;;
+          11)   echo "branch=v3_11.0"   >> "$GITHUB_OUTPUT" ;;
+          10.0) echo "branch=v3_10.0"   >> "$GITHUB_OUTPUT" ;;
+          9.0)  echo "branch=v3_9.0"    >> "$GITHUB_OUTPUT" ;;
+          *)    echo "SHRP has no known manifest branch for ${{ inputs.MANIFEST_BRANCH }}" && exit 1 ;;
+        esac
+
     - name: Install OpenJDK
       if: steps.buildtree.outputs.value == 'omni'
       uses: actions/setup-java@v4
@@ -118,7 +127,7 @@ jobs:
         cd workspace
         git config --global user.name "${GITHUB_ACTOR}"
         git config --global user.email "${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
-        repo init --depth=1 -u https://github.com/gawasvedraj/platform_manifest_twrp_aosp.git -b twrp-${{ inputs.MANIFEST_BRANCH }}
+        repo init --depth=1 -u https://github.com/SHRP/manifest.git -b ${{ steps.shrpbranch.outputs.branch }}
 
     - name: Repo Sync
       run: |
@@ -198,12 +207,6 @@ jobs:
       if: inputs.RECOVERY_INSTALLER == true && inputs.MANIFEST_BRANCH != '6.0' && inputs.BUILD_TARGET != 'vendor_boot'
       run: |
         case ${{ inputs.MANIFEST_BRANCH }} in
-          7.1)
-            patchNum=5080
-            ;;
-          8.1)
-            patchNum=5079
-            ;;
           9.0)
             patchNum=5037
             ;;
@@ -248,7 +251,7 @@ jobs:
           export USE_RECOVERY_INSTALLER=true
           export RECOVERY_INSTALLER_PATH=bootable/recovery/installer
         fi
-        lunch ${{ steps.buildtree.outputs.value }}_${{ inputs.DEVICE_NAME }}-eng && make ${{ inputs.BUILD_TARGET }}image -j$(nproc --all)
+        lunch omni_${{ inputs.DEVICE_NAME }}-eng && make ${{ inputs.BUILD_TARGET }}image -j$(nproc --all)
       working-directory: workspace
 
     - name: Upload to Release
