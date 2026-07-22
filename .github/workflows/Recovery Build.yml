@@ -49,7 +49,7 @@ on:
         description: Include recovery installer zip
         type: boolean
         required: true
-        default: false
+        default: true
 
 jobs:
   build:
@@ -203,25 +203,18 @@ jobs:
       working-directory: workspace
       continue-on-error: true
 
-    - name: Include Recovery Installer
-      if: inputs.RECOVERY_INSTALLER == true && inputs.MANIFEST_BRANCH != '6.0' && inputs.BUILD_TARGET != 'vendor_boot'
-      run: |
-        case ${{ inputs.MANIFEST_BRANCH }} in
-          9.0)
-            patchNum=5037
-            ;;
-          11)
-            patchNum=4964
-            ;;
-          12.1)
-            patchNum=5445
-            ;;
-        esac
-        source build/envsetup.sh
-        repopick -g https://gerrit.twrp.me ${patchNum}
-      working-directory: workspace
+    - name: Check Recovery Installer availability
+      if: inputs.RECOVERY_INSTALLER == true && inputs.BUILD_TARGET != 'vendor_boot'
       id: recoveryinstaller
-      continue-on-error: true
+      run: |
+        if [ -d "bootable/recovery/installer" ]; then
+          echo "Recovery installer directory found"
+          echo "available=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "bootable/recovery/installer not found in this tree — skipping installer build"
+          echo "available=false" >> "$GITHUB_OUTPUT"
+        fi
+      working-directory: workspace
 
     - name: Install Python 2
       if: ${{ steps.buildtree.outputs.value == 'omni' }}
@@ -236,7 +229,7 @@ jobs:
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=false
         export USE_CCACHE=0
-        if [ "${{ inputs.RECOVERY_INSTALLER }}" = "true" ] && [ "${{ steps.recoveryinstaller.outcome }}" = "success" ]; then
+        if [ "${{ inputs.RECOVERY_INSTALLER }}" = "true" ] && [ "${{ steps.recoveryinstaller.outputs.available }}" = "true" ]; then
           export USE_RECOVERY_INSTALLER=true
           export RECOVERY_INSTALLER_PATH=bootable/recovery/installer
         fi
@@ -249,7 +242,7 @@ jobs:
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
         export USE_CCACHE=0
-        if [ "${{ inputs.RECOVERY_INSTALLER }}" = "true" ] && [ "${{ steps.recoveryinstaller.outcome }}" = "success" ]; then
+        if [ "${{ inputs.RECOVERY_INSTALLER }}" = "true" ] && [ "${{ steps.recoveryinstaller.outputs.available }}" = "true" ]; then
           export USE_RECOVERY_INSTALLER=true
           export RECOVERY_INSTALLER_PATH=bootable/recovery/installer
         fi
