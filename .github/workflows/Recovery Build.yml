@@ -228,7 +228,7 @@ jobs:
       run: |
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=false
-        lunch twrp_${{ inputs.DEVICE_NAME }}-eng
+        lunch twrp_${{ inputs.DEVICE_NAME }}-eng || true
         mkdir -p "${GITHUB_WORKSPACE}/.ccache"
         export CCACHE_DIR="${GITHUB_WORKSPACE}/.ccache"
         if [ "${{ inputs.RECOVERY_INSTALLER }}" = "true" ] && [ "${{ steps.recoveryinstaller.outputs.available }}" = "true" ]; then
@@ -243,7 +243,7 @@ jobs:
       run: |
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
-        lunch omni_${{ inputs.DEVICE_NAME }}-eng
+        lunch omni_${{ inputs.DEVICE_NAME }}-eng || true
         mkdir -p "${GITHUB_WORKSPACE}/.ccache"
         export CCACHE_DIR="${GITHUB_WORKSPACE}/.ccache"
         if [ "${{ inputs.RECOVERY_INSTALLER }}" = "true" ] && [ "${{ steps.recoveryinstaller.outputs.available }}" = "true" ]; then
